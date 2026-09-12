@@ -190,17 +190,17 @@ StickerMenuBtn.MouseButton1Click:Connect(function()
     StickerFrame.Visible = not StickerFrame.Visible
 end)
 
--- Toggle Button (Side Bar)
+-- Toggle Button (Side Bar) - تصغير الحجم وإزاحته للأسفل قليلاً
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "ToggleButton"
 ToggleButton.Parent = ScreenGui
-ToggleButton.Position = UDim2.new(0, 5, 0.5, -80)
-ToggleButton.Size = UDim2.new(0, 38, 0, 160)
+ToggleButton.Position = UDim2.new(0, 5, 0.5, -30)
+ToggleButton.Size = UDim2.new(0, 32, 0, 120)
 ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 ToggleButton.BackgroundTransparency = 0.5
 ToggleButton.Text = "C\nH\nA\nT"
 ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.TextSize = 16
+ToggleButton.TextSize = 14
 ToggleButton.Font = Enum.Font.SourceSansBold
 
 local ToggleCorner = Instance.new("UICorner")
