@@ -159,7 +159,7 @@ HeaderMsgRainbowBtn.Parent = Title
 HeaderMsgRainbowBtn.Size = UDim2.new(0, 32, 0, 26)
 HeaderMsgRainbowBtn.Position = UDim2.new(0, 80, 0, 4)
 HeaderMsgRainbowBtn.BackgroundColor3 = isMessageRainbowEnabled and Color3.fromRGB(40, 160, 40) or Color3.fromRGB(50, 50, 50)
-HeaderMsgRainbowBtn.BackgroundTransparency = 0.3
+HeaderMsgRainbowBtn.BackgroundTransparency = 0.85 -- تم تعديل الشفافية هنا لتصبح شفافة
 HeaderMsgRainbowBtn.Text = "✨"
 HeaderMsgRainbowBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 HeaderMsgRainbowBtn.TextSize = 14
@@ -203,6 +203,7 @@ end)
 HeaderMsgRainbowBtn.MouseButton1Click:Connect(function()
     isMessageRainbowEnabled = not isMessageRainbowEnabled
     HeaderMsgRainbowBtn.BackgroundColor3 = isMessageRainbowEnabled and Color3.fromRGB(40, 160, 40) or Color3.fromRGB(50, 50, 50)
+    HeaderMsgRainbowBtn.BackgroundTransparency = isMessageRainbowEnabled and 0.3 or 0.85
 end)
 
 local AdminPanelFrame = Instance.new("Frame")
@@ -311,7 +312,6 @@ ColorCustomizerBtn.MouseButton1Click:Connect(function()
         lbl.ZIndex = 26
     end
 
-    -- 1. واجهة التطبيق
     createSectionTitle("🌟 1. لون واجهة التطبيق الملكية:")
 
     local uiBoxContainer = Instance.new("Frame")
@@ -443,7 +443,6 @@ ColorCustomizerBtn.MouseButton1Click:Connect(function()
         end)
     end
 
-    -- 2. رسائل الشات
     createSectionTitle("💬 2. لون رسائل الشات الملكية:")
 
     local msgBoxContainer = Instance.new("Frame")
@@ -468,6 +467,7 @@ ColorCustomizerBtn.MouseButton1Click:Connect(function()
     toggleMsgBtn.MouseButton1Click:Connect(function()
         isMessageRainbowEnabled = not isMessageRainbowEnabled
         HeaderMsgRainbowBtn.BackgroundColor3 = isMessageRainbowEnabled and Color3.fromRGB(40, 160, 40) or Color3.fromRGB(50, 50, 50)
+        HeaderMsgRainbowBtn.BackgroundTransparency = isMessageRainbowEnabled and 0.3 or 0.85
         toggleMsgBtn.BackgroundColor3 = isMessageRainbowEnabled and Color3.fromRGB(40, 160, 40) or Color3.fromRGB(160, 40, 40)
         toggleMsgBtn.Text = isMessageRainbowEnabled and "رينبو الرسائل: ✅" or "رينبو الرسائل: ❌"
     end)
@@ -554,6 +554,7 @@ ColorCustomizerBtn.MouseButton1Click:Connect(function()
         cBtn.MouseButton1Click:Connect(function()
             isMessageRainbowEnabled = false
             HeaderMsgRainbowBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            HeaderMsgRainbowBtn.BackgroundTransparency = 0.85
             toggleMsgBtn.BackgroundColor3 = Color3.fromRGB(160, 40, 40)
             toggleMsgBtn.Text = "رينبو الرسائل: ❌"
             local hexColor = string.format("#%02x%02x%02x", math.floor(colData[2].R*255), math.floor(colData[2].G*255), math.floor(colData[2].B*255))
@@ -566,7 +567,6 @@ ColorCustomizerBtn.MouseButton1Click:Connect(function()
         end)
     end
 
-    -- 3. أسماء المطورين
     createSectionTitle("👑 3. لون أسماء المطورين:")
 
     local nameBoxContainer = Instance.new("Frame")
