@@ -1,4 +1,4 @@
--- Micy Chat v4.13 - Instant Local Display & Ultra Fast Speed
+-- Micy Chat v4.13 - Instant Local Display & Ultra Fast Speed (With Auto-Cleanup)
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
 local FIREBASE_URL = "https://micychat-f41e8-default-rtdb.firebaseio.com/messages.json"
+local FIREBASE_BASE = "https://micychat-f41e8-default-rtdb.firebaseio.com"
 local TYPING_URL = "https://micychat-f41e8-default-rtdb.firebaseio.com/typing.json"
 local BANS_URL = "https://micychat-f41e8-default-rtdb.firebaseio.com/bans.json"
 local ONLINE_URL = "https://micychat-f41e8-default-rtdb.firebaseio.com/online.json"
@@ -48,7 +49,7 @@ local loadedKeys = {}
 -- Welcome Notification
 StarterGui:SetCore("SendNotification", {
     Title = isVipUser and "🛡️ [Micy Chat v4.13]" or "⚡ Micy Chat v4.13";
-    Text = "تم تفعيل الظهور الفوري للرسائل محلياً!";
+    Text = "تم تفعيل الظهور الفوري والحذف التلقائي!";
     Duration = 5;
 })
 
@@ -72,7 +73,7 @@ PopupLayout.SortOrder = Enum.SortOrder.LayoutOrder
 PopupLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
 PopupLayout.Padding = UDim.new(0, 6)
 
--- ⏳ نافذة عداد الميوت المصغرة (قابلة للسحب - Draggable)
+-- ⏳ نافذة عداد الميوت المصغرة
 local MuteTimerLabel = Instance.new("TextButton")
 MuteTimerLabel.Name = "MuteTimerLabel"
 MuteTimerLabel.Parent = ScreenGui
@@ -261,7 +262,7 @@ local InputCorner = Instance.new("UICorner")
 InputCorner.CornerRadius = UDim.new(0, 8)
 InputCorner.Parent = InputBox
 
--- Spam Button (صاروخ 🚀 صار مكانه مكان الملصقات)
+-- Spam Button
 local SpamButton = Instance.new("TextButton")
 SpamButton.Parent = MainFrame
 SpamButton.Position = UDim2.new(0, 178, 0, 210)
@@ -277,7 +278,7 @@ local SpamCorner = Instance.new("UICorner")
 SpamCorner.CornerRadius = UDim.new(0, 8)
 SpamCorner.Parent = SpamButton
 
--- Sticker Menu Button (ملصقات 🖼️ صارت مكان الصاروخ)
+-- Sticker Menu Button
 local StickerMenuBtn = Instance.new("TextButton")
 StickerMenuBtn.Parent = MainFrame
 StickerMenuBtn.Position = UDim2.new(0, 226, 0, 210)
@@ -309,7 +310,7 @@ local SendCorner = Instance.new("UICorner")
 SendCorner.CornerRadius = UDim.new(0, 8)
 SendCorner.Parent = SendButton
 
--- Stickers Frame (تعديل موضعها لتناسب المكان الجديد لزر الملصقات)
+-- Stickers Frame
 local StickerFrame = Instance.new("Frame")
 StickerFrame.Parent = MainFrame
 StickerFrame.Position = UDim2.new(0, 178, 0, 45)
@@ -435,6 +436,46 @@ local function sendMuteAction(targetId, durationSeconds)
     end)
 end
 
+-- 🧹 دالة الحذف التلقائي للرسائل القديمة (تحافظ على آخر 25 رسالة فقط لتفريغ المساحة)
+local function checkAndCleanMessages()
+    task.spawn(function()
+        pcall(function()
+            local res = request({
+                Url = FIREBASE_URL,
+                Method = "GET"
+            })
+            if res and res.Success and res.Body and res.Body ~= "null" then
+                local data = HttpService:JSONDecode(res.Body)
+                if type(data) == "table" then
+                    local keys = {}
+                    for k, _ in pairs(data) do
+                        table.insert(keys, k)
+                    end
+                    
+                    -- لو تجاوزت عدد الرسائل 25 رسالة، نقوم بحذف الأقدم
+                    if #keys > 25 then
+                        -- ترتيب المفاتيح أو حذف الرسائل الزائدة
+                        table.sort(keys, function(a, b)
+                            return (data[a].time or 0) < (data[b].time or 0)
+                        end)
+                        
+                        -- حذف الرسائل الزائدة من قاعدة البيانات مباشرة
+                        local excessCount = #keys - 25
+                        for i = 1, excessCount do
+                            local oldKey = keys[i]
+                            request({
+                                Url = FIREBASE_BASE .. "/messages/" .. oldKey .. ".json",
+                                Method = "DELETE"
+                            })
+                            loadedKeys[oldKey] = nil
+                        end
+                    end
+                end
+            end
+        end)
+    end)
+end
+
 -- دالة لإضافة الرسالة محلياً للشات مباشرة وبدون تأخير
 local function addMessageToUI(senderId, senderName, text, isSticker, stickerId, isSystem, systemColor, isVipSender)
     local isMutedUser = mutedUsers[tostring(senderId)]
@@ -523,7 +564,7 @@ local function addMessageToUI(senderId, senderName, text, isSticker, stickerId, 
     Scroll.CanvasPosition = Vector2.new(0, Scroll.AbsoluteCanvasSize.Y)
 end
 
--- دالة الإرسال مع العرض المحلي الفوري (Zero-Delay)
+-- دالة الإرسال مع العرض المحلي الفوري (Zero-Delay) وتنظيف الرسائل القديمة تلقائياً
 local function sendData(text, isSticker, stickerId, isSystem)
     if not isSystem and (text ~= "" or isSticker) then
         addMessageToUI(LocalPlayer.UserId, LocalPlayer.DisplayName, text, isSticker, stickerId, false, nil, isVipUser)
@@ -554,6 +595,9 @@ local function sendData(text, isSticker, stickerId, isSystem)
                 end
             end
         end)
+        
+        -- تشغيل تنظيف الرسائل القديمة بعد كل إرسال
+        checkAndCleanMessages()
     end)
 end
 
@@ -1022,7 +1066,7 @@ task.spawn(function()
                     local typingUser = nil
                     for _, info in pairs(typingData) do
                         if info and info.isTyping == true and tostring(info.senderId) ~= tostring(LocalPlayer.UserId) then
-                            local tMute = mutedUsers[tostring(info.senderId)]
+                            local tMute = mutedUsers[tostring(info.info.senderId)] or mutedUsers[tostring(info.senderId)]
                             local tMuteActive = tMute and (tMute == 0 or os.time() < tMute)
                             if not bannedUsers[tostring(info.senderId)] and not tMuteActive then
                                 typingUser = info.senderName
