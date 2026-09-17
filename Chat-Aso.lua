@@ -159,7 +159,7 @@ HeaderMsgRainbowBtn.Parent = Title
 HeaderMsgRainbowBtn.Size = UDim2.new(0, 32, 0, 26)
 HeaderMsgRainbowBtn.Position = UDim2.new(0, 80, 0, 4)
 HeaderMsgRainbowBtn.BackgroundColor3 = isMessageRainbowEnabled and Color3.fromRGB(40, 160, 40) or Color3.fromRGB(50, 50, 50)
-HeaderMsgRainbowBtn.BackgroundTransparency = 0.85 -- تم تعديل الشفافية هنا لتصبح شفافة
+HeaderMsgRainbowBtn.BackgroundTransparency = 0.85
 HeaderMsgRainbowBtn.Text = "✨"
 HeaderMsgRainbowBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 HeaderMsgRainbowBtn.TextSize = 14
@@ -868,7 +868,7 @@ end)
 
 local myOnlineDisplayName = "ساني"
 if tostring(LocalPlayer.UserId) == "9202875847" then myOnlineDisplayName = "[المطوره سـانا] 👑"
-elseif tostring(LocalPlayer.UserId) == "10545964840" then myOnlineDisplayName = "[المطور الثاني] 👑"
+elseif tostring(LocalPlayer.UserId) == "10545964840" then myOnlineDisplayName = "[المطور سـاني] 👑"
 elseif tostring(LocalPlayer.UserId) == "10567420230" then myOnlineDisplayName = "[المطور سـاني] 👑"
 elseif isVipUser then myOnlineDisplayName = "ساني [👑 VIP]" end
 
@@ -951,7 +951,7 @@ local function addMessageToUI(senderId, senderName, text, isSticker, stickerId, 
         local rankTitle = ""
         local isDevUser = VIP_USER_IDS[tonumber(senderId)] or false
         if tostring(senderId) == "9202875847" then rankTitle = "[المطوره سـانا] 👑"
-        elseif tostring(senderId) == "10545964840" then rankTitle = "[المطور الثاني] 👑"
+        elseif tostring(senderId) == "10545964840" then rankTitle = "[المطور سـاني] 👑"
         elseif tostring(senderId) == "10567420230" then rankTitle = "[المطور سـاني] 👑"
         elseif isVipSender then rankTitle = senderName .. " [👑 VIP]"
         else rankTitle = "[" .. senderName .. "]" end
@@ -1082,7 +1082,7 @@ local function showSidePopup(senderId, senderName, text, isSticker, stickerId, i
         
         local popupTitle = senderName
         if tostring(senderId) == "9202875847" then popupTitle = "[المطوره سـانا] 👑"
-        elseif tostring(senderId) == "10545964840" then popupTitle = "[المطور الثاني] 👑"
+        elseif tostring(senderId) == "10545964840" then popupTitle = "[المطور سـاني] 👑"
         elseif tostring(senderId) == "10567420230" then popupTitle = "[المطور سـاني] 👑"
         elseif isVipSender then popupTitle = senderName .. " [👑 VIP]" end
         nameLabel.Text = popupTitle
