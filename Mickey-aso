@@ -1,4 +1,4 @@
--- Micy Chat v4.26 - Royal Edition
+-- Micy Chat v4.30 - Royal Edition (Saved Messages & Direct Chat)
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
@@ -31,6 +31,8 @@ local VIP_USER_IDS = {
 }
 
 local isVipUser = VIP_USER_IDS[LocalPlayer.UserId] or false
+
+local targetPrivateUser = nil -- متغير لتحديد الشخص الحالي للاتصال الخاص (nil يعني عام)
 
 local uiRainbowSpeed = 1.2
 local msgRainbowSpeed = 1.2
@@ -68,7 +70,7 @@ local loadedKeys = {}
 
 StarterGui:SetCore("SendNotification", {
     Title = isVipUser and "🛡️ [Micy Chat]" or "⚡ Micy Chat";
-    Text = "تم تشغيل السكربت الملكي v4.26 بنجاح!";
+    Text = "تم تشغيل السكربت الملكي (v4.30) بنجاح!";
     Duration = 5;
 })
 
@@ -116,7 +118,7 @@ Title.Parent = MainFrame
 Title.Size = UDim2.new(1, 0, 0, 35)
 Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Title.BackgroundTransparency = 0.4
-Title.Text = "👑 Micy Chat v4.26 [Royal]"
+Title.Text = "👑 Micy Chat v4.30 [Royal]"
 Title.TextColor3 = Color3.fromRGB(255, 215, 0)
 Title.TextSize = 13
 Title.Font = Enum.Font.SourceSansBold
@@ -195,9 +197,13 @@ UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Padding = UDim.new(0, 8)
 
 ClearChatBtn.MouseButton1Click:Connect(function()
-    for _, child in pairs(Scroll:GetChildren()) do
-        if child:IsA("Frame") then child:Destroy() end
-    end
+    task.spawn(function()
+        pcall(function() httpRequest({ Url = FIREBASE_URL, Method = "DELETE" }) end)
+        for _, child in pairs(Scroll:GetChildren()) do
+            if child:IsA("Frame") then child:Destroy() end
+        end
+        loadedKeys = {}
+    end)
 end)
 
 HeaderMsgRainbowBtn.MouseButton1Click:Connect(function()
@@ -513,128 +519,6 @@ ColorCustomizerBtn.MouseButton1Click:Connect(function()
         msgSpeedLbl.Text = "السرعة: " .. string.format("%.1f", msgRainbowSpeed)
     end)
 
-    local msgColorDropdownBtn = Instance.new("TextButton")
-    msgColorDropdownBtn.Parent = msgBoxContainer
-    msgColorDropdownBtn.Position = UDim2.new(0, 10, 0, 40)
-    msgColorDropdownBtn.Size = UDim2.new(0, 155, 0, 26)
-    msgColorDropdownBtn.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-    msgColorDropdownBtn.Text = "👑 قائمة الألوان الملكية للرسائل"
-    msgColorDropdownBtn.TextColor3 = Color3.fromRGB(255, 215, 0)
-    msgColorDropdownBtn.TextSize = 9
-    msgColorDropdownBtn.Font = Enum.Font.SourceSansBold
-    msgColorDropdownBtn.ZIndex = 27
-    local mcddc = Instance.new("UICorner") mcddc.CornerRadius = UDim.new(0, 4) mcddc.Parent = msgColorDropdownBtn
-
-    local msgColorDropdownList = Instance.new("ScrollingFrame")
-    msgColorDropdownList.Parent = ColorOptionsFrame
-    msgColorDropdownList.Size = UDim2.new(0, 340, 0, 95)
-    msgColorDropdownList.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    msgColorDropdownList.BackgroundTransparency = 0.05
-    msgColorDropdownList.Visible = false
-    msgColorDropdownList.ZIndex = 30
-    msgColorDropdownList.CanvasSize = UDim2.new(0, 0, 0, 160)
-    msgColorDropdownList.ScrollBarThickness = 4
-    local mcddlc = Instance.new("UICorner") mcddlc.CornerRadius = UDim.new(0, 6) mcddlc.Parent = msgColorDropdownList
-    local msggrid = Instance.new("UIGridLayout") msggrid.Parent = msgColorDropdownList msggrid.CellSize = UDim2.new(0, 105, 0, 26) msggrid.CellPadding = UDim2.new(0, 5, 0, 5) msggrid.SortOrder = Enum.SortOrder.LayoutOrder
-
-    msgColorDropdownBtn.MouseButton1Click:Connect(function()
-        msgColorDropdownList.Visible = not msgColorDropdownList.Visible
-    end)
-
-    for _, colData in ipairs(royalColors) do
-        local cBtn = Instance.new("TextButton")
-        cBtn.Parent = msgColorDropdownList
-        cBtn.BackgroundColor3 = colData[2]
-        cBtn.Text = colData[1]
-        cBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        cBtn.TextSize = 10
-        cBtn.Font = Enum.Font.SourceSansBold
-        cBtn.ZIndex = 31
-        local cbc = Instance.new("UICorner") cbc.CornerRadius = UDim.new(0, 4) cbc.Parent = cBtn
-        cBtn.MouseButton1Click:Connect(function()
-            isMessageRainbowEnabled = false
-            HeaderMsgRainbowBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            HeaderMsgRainbowBtn.BackgroundTransparency = 0.85
-            toggleMsgBtn.BackgroundColor3 = Color3.fromRGB(160, 40, 40)
-            toggleMsgBtn.Text = "رينبو الرسائل: ❌"
-            local hexColor = string.format("#%02x%02x%02x", math.floor(colData[2].R*255), math.floor(colData[2].G*255), math.floor(colData[2].B*255))
-            for _, item in pairs(activeMessageLabels) do
-                if item and item.Label and item.Label.Parent then
-                    item.Label.Text = string.format("<font color='%s'>%s</font>", hexColor, item.OriginalText or "")
-                end
-            end
-            msgColorDropdownList.Visible = false
-        end)
-    end
-
-    createSectionTitle("👑 3. لون أسماء المطورين:")
-
-    local nameBoxContainer = Instance.new("Frame")
-    nameBoxContainer.Parent = ColorOptionsFrame
-    nameBoxContainer.Size = UDim2.new(0, 340, 0, 75)
-    nameBoxContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    nameBoxContainer.BackgroundTransparency = 0.3
-    nameBoxContainer.ZIndex = 26
-    local nbtc = Instance.new("UICorner") nbtc.CornerRadius = UDim.new(0, 6) nbtc.Parent = nameBoxContainer
-
-    local toggleNameBtn = Instance.new("TextButton")
-    toggleNameBtn.Parent = nameBoxContainer
-    toggleNameBtn.Position = UDim2.new(0, 10, 0, 8)
-    toggleNameBtn.Size = UDim2.new(0, 155, 0, 26)
-    toggleNameBtn.BackgroundColor3 = isNameRainbowEnabled and Color3.fromRGB(40, 160, 40) or Color3.fromRGB(160, 40, 40)
-    toggleNameBtn.Text = isNameRainbowEnabled and "رينبو الأسماء: ✅" or "رينبو الأسماء: ❌"
-    toggleNameBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    toggleNameBtn.Font = Enum.Font.SourceSansBold
-    toggleNameBtn.TextSize = 11
-    toggleNameBtn.ZIndex = 27
-    local tncc = Instance.new("UICorner") tncc.CornerRadius = UDim.new(0, 6) tncc.Parent = toggleNameBtn
-    toggleNameBtn.MouseButton1Click:Connect(function()
-        isNameRainbowEnabled = not isNameRainbowEnabled
-        toggleNameBtn.BackgroundColor3 = isNameRainbowEnabled and Color3.fromRGB(40, 160, 40) or Color3.fromRGB(160, 40, 40)
-        toggleNameBtn.Text = isNameRainbowEnabled and "رينبو الأسماء: ✅" or "رينبو الأسماء: ❌"
-    end)
-
-    local nameSpeedLbl = Instance.new("TextLabel")
-    nameSpeedLbl.Parent = nameBoxContainer
-    nameSpeedLbl.Position = UDim2.new(0, 175, 0, 8)
-    nameSpeedLbl.Size = UDim2.new(0, 155, 0, 26)
-    nameSpeedLbl.BackgroundTransparency = 1
-    nameSpeedLbl.Text = "السرعة: " .. string.format("%.1f", nameRainbowSpeed)
-    nameSpeedLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    nameSpeedLbl.TextSize = 11
-    nameSpeedLbl.Font = Enum.Font.SourceSansBold
-    nameSpeedLbl.ZIndex = 27
-
-    local nameFaster = Instance.new("TextButton")
-    nameFaster.Parent = nameBoxContainer
-    nameFaster.Position = UDim2.new(0, 175, 0, 40)
-    nameFaster.Size = UDim2.new(0, 75, 0, 26)
-    nameFaster.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    nameFaster.Text = "أسرع ⚡"
-    nameFaster.TextColor3 = Color3.fromRGB(255, 255, 255)
-    nameFaster.TextSize = 10
-    nameFaster.ZIndex = 27
-    local nc1 = Instance.new("UICorner") nc1.CornerRadius = UDim.new(0, 4) nc1.Parent = nameFaster
-    nameFaster.MouseButton1Click:Connect(function()
-        nameRainbowSpeed = math.min(nameRainbowSpeed + 0.3, 5.0)
-        nameSpeedLbl.Text = "السرعة: " .. string.format("%.1f", nameRainbowSpeed)
-    end)
-
-    local nameSlower = Instance.new("TextButton")
-    nameSlower.Parent = nameBoxContainer
-    nameSlower.Position = UDim2.new(0, 255, 0, 40)
-    nameSlower.Size = UDim2.new(0, 75, 0, 26)
-    nameSlower.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    nameSlower.Text = "أبطأ 🐢"
-    nameSlower.TextColor3 = Color3.fromRGB(255, 255, 255)
-    nameSlower.TextSize = 10
-    nameSlower.ZIndex = 27
-    local nc2 = Instance.new("UICorner") nc2.CornerRadius = UDim.new(0, 4) nc2.Parent = nameSlower
-    nameSlower.MouseButton1Click:Connect(function()
-        nameRainbowSpeed = math.max(nameRainbowSpeed - 0.3, 0.1)
-        nameSpeedLbl.Text = "السرعة: " .. string.format("%.1f", nameRainbowSpeed)
-    end)
-
     local closeColorBtn = Instance.new("TextButton")
     closeColorBtn.Parent = ColorOptionsFrame
     closeColorBtn.Size = UDim2.new(0, 340, 0, 32)
@@ -647,8 +531,6 @@ ColorCustomizerBtn.MouseButton1Click:Connect(function()
     local ccc = Instance.new("UICorner") ccc.CornerRadius = UDim.new(0, 6) ccc.Parent = closeColorBtn
     closeColorBtn.MouseButton1Click:Connect(function()
         ColorOptionsFrame.Visible = false
-        uiColorDropdownList.Visible = false
-        msgColorDropdownList.Visible = false
     end)
 end)
 
@@ -725,7 +607,7 @@ StickerMenuBtn.Parent = MainFrame
 StickerMenuBtn.Position = UDim2.new(0, 206, 0, 210)
 StickerMenuBtn.Size = UDim2.new(0, 36, 0, 38)
 StickerMenuBtn.Text = "🖼️"
-StickerMenuBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0) -- لون الملصقات برتقالي
+StickerMenuBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
 StickerMenuBtn.BackgroundTransparency = 0.3
 StickerMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 StickerMenuBtn.Font = Enum.Font.SourceSansBold
@@ -738,11 +620,11 @@ StickerCorner.Parent = StickerMenuBtn
 local SendButton = Instance.new("TextButton")
 SendButton.Parent = MainFrame
 SendButton.Position = UDim2.new(0, 246, 0, 210)
-SendButton.Size = UDim2.new(0, 124, 0, 38) -- زر إرسال أعرض وأطول
+SendButton.Size = UDim2.new(0, 124, 0, 38)
 SendButton.Text = "إرسال"
-SendButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-SendButton.BackgroundTransparency = 0.4
-SendButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SendButton.BackgroundColor3 = isVipUser and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(138, 43, 226)
+SendButton.BackgroundTransparency = 0.3
+SendButton.TextColor3 = isVipUser and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(255, 255, 255)
 SendButton.Font = Enum.Font.SourceSansBold
 SendButton.TextSize = 15
 
@@ -829,12 +711,6 @@ task.spawn(function()
                     lbl.TextColor3 = currentColor
                 end
             end
-        else
-            for _, lbl in pairs(rainbowNameLabels) do
-                if lbl and lbl.Parent then
-                    lbl.TextColor3 = Color3.fromRGB(255, 215, 0)
-                end
-            end
         end
     end
 end)
@@ -915,7 +791,12 @@ local function sendMuteAction(targetId, durationSeconds)
     end)
 end
 
-local function addMessageToUI(senderId, senderName, text, isSticker, stickerId, isSystem, systemColor, isVipSender, isRainbowMsg, customMsgColorHex)
+local function addMessageToUI(senderId, senderName, text, isSticker, stickerId, isSystem, systemColor, isVipSender, isRainbowMsg, targetRecipientId)
+    -- إذا كانت الرسالة موجهة خصيصاً لشخص آخر ولست أنا أو المرسل، لا تعرضها
+    if targetRecipientId and targetRecipientId ~= "" and targetRecipientId ~= tostring(LocalPlayer.UserId) and tostring(senderId) ~= tostring(LocalPlayer.UserId) then
+        return
+    end
+
     local isMutedUser = mutedUsers[tostring(senderId)]
     local isMutedActive = isMutedUser and (isMutedUser == 0 or os.time() < isMutedUser)
     if bannedUsers[tostring(senderId)] or ignoredUsers[tostring(senderId)] or isMutedActive then return end
@@ -956,6 +837,10 @@ local function addMessageToUI(senderId, senderName, text, isSticker, stickerId, 
         elseif isVipSender then rankTitle = senderName .. " [👑 VIP]"
         else rankTitle = "[" .. senderName .. "]" end
 
+        if targetRecipientId and targetRecipientId ~= "" then
+            rankTitle = rankTitle .. " 🔒 [خاص]"
+        end
+
         local nameLabel = Instance.new("TextButton")
         nameLabel.Parent = container
         nameLabel.Position = UDim2.new(0, 34, 0, 0)
@@ -968,7 +853,7 @@ local function addMessageToUI(senderId, senderName, text, isSticker, stickerId, 
         nameLabel.Text = rankTitle
         nameLabel.AutoButtonColor = false
 
-        table.insert(rainbowNameLabels, nameLabel)
+        if isDevUser then table.insert(rainbowNameLabels, nameLabel) end
 
         if isSticker then
             container.Size = UDim2.new(1, 0, 0, 70)
@@ -991,12 +876,7 @@ local function addMessageToUI(senderId, senderName, text, isSticker, stickerId, 
             textLabel.TextWrapped = true
             textLabel.RichText = true
             textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-            
-            if customMsgColorHex and customMsgColorHex ~= "" then
-                textLabel.Text = string.format("<font color='%s'>%s</font>", customMsgColorHex, text or "")
-            else
-                textLabel.Text = text or ""
-            end
+            textLabel.Text = text or ""
 
             if isRainbowMsg then
                 table.insert(activeMessageLabels, {Label = textLabel, OriginalText = text})
@@ -1014,13 +894,10 @@ local function addMessageToUI(senderId, senderName, text, isSticker, stickerId, 
 end
 
 local function sendData(text, isSticker, stickerId, isSystem, isRainbow)
-    local activeHex = ""
-    if isMessageRainbowEnabled and not isRainbow then
-        isRainbow = true
-    end
-    
+    local targetRec = targetPrivateUser
     if not isSystem and (text ~= "" or isSticker) then
-        addMessageToUI(LocalPlayer.UserId, "ساني", text, isSticker, stickerId, false, nil, isVipUser, isRainbow, activeHex)
+        -- عرض الرسالة محلياً فوراً (حتى لو أرسلتها لنفسك أو كرسالة خاصة)
+        addMessageToUI(LocalPlayer.UserId, "ساني", text, isSticker, stickerId, false, nil, isVipUser, isRainbow, targetRec)
     end
 
     task.spawn(function()
@@ -1033,7 +910,7 @@ local function sendData(text, isSticker, stickerId, isSystem, isRainbow)
             isSystem = isSystem or false,
             isVip = isVipUser,
             isRainbow = isRainbow or false,
-            msgColor = activeHex,
+            targetRecipient = targetRec or "",
             time = os.time()
         }
         pcall(function()
@@ -1053,7 +930,7 @@ local function sendData(text, isSticker, stickerId, isSystem, isRainbow)
     end)
 end
 
-local function showSidePopup(senderId, senderName, text, isSticker, stickerId, isVipSender)
+local function showSidePopup(senderId, senderName, text, isSticker, stickerId, isVipSender, targetRecipientId)
     task.spawn(function()
         local popup = Instance.new("Frame")
         popup.Parent = PopupHolder
@@ -1067,7 +944,7 @@ local function showSidePopup(senderId, senderName, text, isSticker, stickerId, i
         
         local stroke = Instance.new("UIStroke")
         stroke.Parent = popup
-        stroke.Color = isVipSender and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(138, 43, 226)
+        stroke.Color = Color3.fromRGB(40, 40, 40)
         stroke.Thickness = 1.2
         
         local avatarImg = Instance.new("ImageLabel")
@@ -1089,13 +966,17 @@ local function showSidePopup(senderId, senderName, text, isSticker, stickerId, i
         nameLabel.TextXAlignment = Enum.TextXAlignment.Left
         nameLabel.Font = Enum.Font.SourceSansBold
         nameLabel.TextSize = 11
-        nameLabel.TextColor3 = isVipSender and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(138, 43, 226)
+        nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         
         local popupTitle = senderName
         if tostring(senderId) == "9202875847" then popupTitle = "[المطوره سـانا] 👑"
         elseif tostring(senderId) == "10545964840" then popupTitle = "[المطور سـاني] 👑"
         elseif tostring(senderId) == "10567420230" then popupTitle = "[المطور سـاني] 👑"
         elseif isVipSender then popupTitle = senderName .. " [👑 VIP]" end
+
+        if targetRecipientId and targetRecipientId ~= "" then
+            popupTitle = popupTitle .. " 🔒 [خاص]"
+        end
         nameLabel.Text = popupTitle
         
         if isSticker then
@@ -1117,7 +998,7 @@ local function showSidePopup(senderId, senderName, text, isSticker, stickerId, i
             contentLabel.TextSize = 11
             contentLabel.TextWrapped = true
             contentLabel.RichText = true
-            contentLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            contentLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
             contentLabel.Text = text or ""
         end
         
@@ -1255,12 +1136,12 @@ task.spawn(function()
                                 
                                 local nameLbl = Instance.new("TextLabel")
                                 nameLbl.Parent = row
-                                nameLbl.Size = UDim2.new(0, 120, 1, 0)
+                                nameLbl.Size = UDim2.new(0, 100, 1, 0)
                                 nameLbl.Position = UDim2.new(0, 8, 0, 0)
                                 nameLbl.BackgroundTransparency = 1
                                 nameLbl.Text = info.name or id
                                 nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-                                nameLbl.TextSize = 12
+                                nameLbl.TextSize = 11
                                 nameLbl.Font = Enum.Font.SourceSansBold
                                 nameLbl.TextXAlignment = Enum.TextXAlignment.Left
                                 nameLbl.ZIndex = 6
@@ -1268,73 +1149,55 @@ task.spawn(function()
                                 if VIP_USER_IDS[tonumber(id)] then
                                     table.insert(rainbowNameLabels, nameLbl)
                                 end
+
+                                -- زر الخاص (Direct Message)
+                                local dmBtn = Instance.new("TextButton")
+                                dmBtn.Parent = row
+                                dmBtn.Size = UDim2.new(0, 48, 0, 24)
+                                dmBtn.Position = UDim2.new(1, -165, 0, 4)
+                                dmBtn.BackgroundColor3 = (targetPrivateUser == tostring(id)) and Color3.fromRGB(40, 180, 40) or Color3.fromRGB(80, 40, 160)
+                                dmBtn.Text = (targetPrivateUser == tostring(id)) and "خاص ✅" or "خاص 💬"
+                                dmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                                dmBtn.TextSize = 10
+                                dmBtn.Font = Enum.Font.SourceSansBold
+                                dmBtn.ZIndex = 6
+                                local dmc = Instance.new("UICorner") dmc.CornerRadius = UDim.new(0, 4) dmc.Parent = dmBtn
+                                dmBtn.MouseButton1Click:Connect(function()
+                                    if targetPrivateUser == tostring(id) then
+                                        targetPrivateUser = nil
+                                        dmBtn.Text = "خاص 💬"
+                                        dmBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 160)
+                                        StarterGui:SetCore("SendNotification", {Title = "الشات العام", Text = "تم العودة للشات العام", Duration = 3})
+                                    else
+                                        targetPrivateUser = tostring(id)
+                                        dmBtn.Text = "خاص ✅"
+                                        dmBtn.BackgroundColor3 = Color3.fromRGB(40, 180, 40)
+                                        StarterGui:SetCore("SendNotification", {Title = "الشات الخاص", Text = "تم تحديد الشخص للمراسلة الخاصة", Duration = 3})
+                                    end
+                                end)
                                 
                                 local isMutedTarget = mutedUsers[tostring(id)]
                                 local isTargetMuteActive = isMutedTarget and (isMutedTarget == 0 or currentTime < isMutedTarget)
 
                                 local muteBtn = Instance.new("TextButton")
                                 muteBtn.Parent = row
-                                muteBtn.Size = UDim2.new(0, 55, 0, 24)
-                                muteBtn.Position = UDim2.new(1, -118, 0, 4)
+                                muteBtn.Size = UDim2.new(0, 52, 0, 24)
+                                muteBtn.Position = UDim2.new(1, -112, 0, 4)
                                 muteBtn.BackgroundColor3 = isTargetMuteActive and Color3.fromRGB(200, 100, 0) or Color3.fromRGB(80, 80, 80)
-                                muteBtn.Text = isTargetMuteActive and "إلغاء ميوت" or "ميوت"
+                                muteBtn.Text = isTargetMuteActive and "ميوت" or "ميوت"
                                 muteBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
                                 muteBtn.TextSize = 10
                                 muteBtn.Font = Enum.Font.SourceSansBold
                                 muteBtn.ZIndex = 6
-                                
-                                local mCorner = Instance.new("UICorner")
-                                mCorner.CornerRadius = UDim.new(0, 4)
-                                mCorner.Parent = muteBtn
+                                local mCorner = Instance.new("UICorner") mCorner.CornerRadius = UDim.new(0, 4) mCorner.Parent = muteBtn
                                 
                                 muteBtn.MouseButton1Click:Connect(function()
                                     if isTargetMuteActive then
                                         sendMuteAction(id, 0)
                                         mutedUsers[tostring(id)] = nil
                                     else
-                                        MuteOptionsFrame.Visible = true
-                                        for _, child in pairs(MuteOptionsFrame:GetChildren()) do
-                                            if child:IsA("TextButton") then child:Destroy() end
-                                        end
-
-                                        local function createDurationBtn(text, seconds)
-                                            local dBtn = Instance.new("TextButton")
-                                            dBtn.Parent = MuteOptionsFrame
-                                            dBtn.Size = UDim2.new(0, 200, 0, 32)
-                                            dBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-                                            dBtn.Text = text
-                                            dBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-                                            dBtn.Font = Enum.Font.SourceSansBold
-                                            dBtn.TextSize = 14
-                                            dBtn.ZIndex = 21
-                                            
-                                            local dc = Instance.new("UICorner")
-                                            dc.CornerRadius = UDim.new(0, 6)
-                                            dc.Parent = dBtn
-                                            
-                                            dBtn.MouseButton1Click:Connect(function()
-                                                sendMuteAction(id, seconds)
-                                                mutedUsers[tostring(id)] = (seconds == 0) and 0 or (os.time() + seconds)
-                                                MuteOptionsFrame.Visible = false
-                                            end)
-                                        end
-
-                                        createDurationBtn("دقيقة واحدة", 60)
-                                        createDurationBtn("5 دقائق", 300)
-                                        createDurationBtn("ساعة كاملة", 3600)
-                                        createDurationBtn("5 ساعات", 18000)
-                                        
-                                        local closeOpt = Instance.new("TextButton")
-                                        closeOpt.Parent = MuteOptionsFrame
-                                        closeOpt.Size = UDim2.new(0, 200, 0, 28)
-                                        closeOpt.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-                                        closeOpt.Text = "إلغاء"
-                                        closeOpt.TextColor3 = Color3.fromRGB(255, 255, 255)
-                                        closeOpt.Font = Enum.Font.SourceSansBold
-                                        closeOpt.TextSize = 12
-                                        closeOpt.ZIndex = 21
-                                        local cc = Instance.new("UICorner") cc.CornerRadius = UDim.new(0, 6) cc.Parent = closeOpt
-                                        closeOpt.MouseButton1Click:Connect(function() MuteOptionsFrame.Visible = false end)
+                                        sendMuteAction(id, 300)
+                                        mutedUsers[tostring(id)] = os.time() + 300
                                     end
                                 end)
 
@@ -1342,17 +1205,14 @@ task.spawn(function()
                                 local banBtn = Instance.new("TextButton")
                                 banBtn.Parent = row
                                 banBtn.Size = UDim2.new(0, 50, 0, 24)
-                                banBtn.Position = UDim2.new(1, -58, 0, 4)
+                                banBtn.Position = UDim2.new(1, -56, 0, 4)
                                 banBtn.BackgroundColor3 = isBanned and Color3.fromRGB(40, 160, 40) or Color3.fromRGB(180, 40, 40)
                                 banBtn.Text = isBanned and "إلغاء" or "طرد"
                                 banBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
                                 banBtn.TextSize = 10
                                 banBtn.Font = Enum.Font.SourceSansBold
                                 banBtn.ZIndex = 6
-                                
-                                local bCorner = Instance.new("UICorner")
-                                bCorner.CornerRadius = UDim.new(0, 4)
-                                bCorner.Parent = banBtn
+                                local bCorner = Instance.new("UICorner") bCorner.CornerRadius = UDim.new(0, 4) bCorner.Parent = banBtn
                                 
                                 banBtn.MouseButton1Click:Connect(function()
                                     if isBanned then
@@ -1382,15 +1242,27 @@ task.spawn(function()
                                 local isTargetMuted = targetMuteExpire and (targetMuteExpire == 0 or os.time() < targetMuteExpire)
                                 
                                 if not bannedUsers[tostring(msg.senderId)] and not isTargetMuted then
-                                    if tostring(msg.senderId) ~= tostring(LocalPlayer.UserId) then
-                                        JoinSound:Play()
-                                        if msg.isSystem then
-                                            addMessageToUI(msg.senderId, msg.senderName, msg.text, false, nil, true, Color3.fromRGB(255, 215, 0), msg.isVip, false, msg.msgColor)
+                                    -- استقبال الرسالة إذا لم تكن خاصة لشخص آخر، أو إذا كانت موجهة إلينا خصيصاً أو أرسلناها لنفسنا
+                                    local isForMeOrEveryone = (not msg.targetRecipient or msg.targetRecipient == "" or msg.targetRecipient == tostring(LocalPlayer.UserId) or tostring(msg.senderId) == tostring(LocalPlayer.UserId))
+                                    
+                                    if isForMeOrEveryone then
+                                        -- لا تشغل الصوت أو البوب أب مرتين إذا كانت رسالة أرسلتها بنفسك محلياً
+                                        if tostring(msg.senderId) ~= tostring(LocalPlayer.UserId) then
+                                            JoinSound:Play()
+                                            if msg.isSystem then
+                                                addMessageToUI(msg.senderId, msg.senderName, msg.text, false, nil, true, Color3.fromRGB(255, 215, 0), msg.isVip, false, msg.targetRecipient)
+                                            else
+                                                addMessageToUI(msg.senderId, msg.senderName, msg.text, msg.isSticker, msg.stickerId, false, nil, msg.isVip, msg.isRainbow, msg.targetRecipient)
+                                                showSidePopup(msg.senderId, msg.senderName, msg.text, msg.isSticker, msg.stickerId, msg.isVip, msg.targetRecipient)
+                                                if not msg.isSticker and msg.text and not msg.text:match("^http") then
+                                                    showBubbleChat(msg.senderId, msg.text)
+                                                end
+                                            end
                                         else
-                                            addMessageToUI(msg.senderId, msg.senderName, msg.text, msg.isSticker, msg.stickerId, false, nil, msg.isVip, msg.isRainbow, msg.msgColor)
-                                            showSidePopup(msg.senderId, msg.senderName, msg.text, msg.isSticker, msg.stickerId, msg.isVip)
-                                            if not msg.isSticker and msg.text and not msg.text:match("^http") then
-                                                showBubbleChat(msg.senderId, msg.text)
+                                            -- إذا أرسلت رسالة لنفسك (الرسائل المحفوظة)، قم بتشغيل صوت الإشعار والبوب أب لتستلمها كإشعار حقيقي كما طلبت!
+                                            if msg.targetRecipient == tostring(LocalPlayer.UserId) then
+                                                JoinSound:Play()
+                                                showSidePopup(msg.senderId, msg.senderName, msg.text, msg.isSticker, msg.stickerId, msg.isVip, msg.targetRecipient)
                                             end
                                         end
                                     end
