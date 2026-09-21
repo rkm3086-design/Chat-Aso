@@ -624,7 +624,7 @@ SendButton.Size = UDim2.new(0, 124, 0, 38)
 SendButton.Text = "إرسال"
 SendButton.BackgroundColor3 = isVipUser and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(138, 43, 226)
 SendButton.BackgroundTransparency = 0.3
-SendButton.TextColor3 = isVipUser and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(255, 255, 255)
+SendButton.TextColor3 = Color3.fromRGB(255, 255, 255) -- تم التعديل هنا ليصبح لون الخط أبيض دائماً
 SendButton.Font = Enum.Font.SourceSansBold
 SendButton.TextSize = 15
 
@@ -792,7 +792,6 @@ local function sendMuteAction(targetId, durationSeconds)
 end
 
 local function addMessageToUI(senderId, senderName, text, isSticker, stickerId, isSystem, systemColor, isVipSender, isRainbowMsg, targetRecipientId)
-    -- إذا كانت الرسالة موجهة خصيصاً لشخص آخر ولست أنا أو المرسل، لا تعرضها
     if targetRecipientId and targetRecipientId ~= "" and targetRecipientId ~= tostring(LocalPlayer.UserId) and tostring(senderId) ~= tostring(LocalPlayer.UserId) then
         return
     end
@@ -896,7 +895,6 @@ end
 local function sendData(text, isSticker, stickerId, isSystem, isRainbow)
     local targetRec = targetPrivateUser
     if not isSystem and (text ~= "" or isSticker) then
-        -- عرض الرسالة محلياً فوراً (حتى لو أرسلتها لنفسك أو كرسالة خاصة)
         addMessageToUI(LocalPlayer.UserId, "ساني", text, isSticker, stickerId, false, nil, isVipUser, isRainbow, targetRec)
     end
 
@@ -1150,7 +1148,6 @@ task.spawn(function()
                                     table.insert(rainbowNameLabels, nameLbl)
                                 end
 
-                                -- زر الخاص (Direct Message)
                                 local dmBtn = Instance.new("TextButton")
                                 dmBtn.Parent = row
                                 dmBtn.Size = UDim2.new(0, 48, 0, 24)
@@ -1242,11 +1239,9 @@ task.spawn(function()
                                 local isTargetMuted = targetMuteExpire and (targetMuteExpire == 0 or os.time() < targetMuteExpire)
                                 
                                 if not bannedUsers[tostring(msg.senderId)] and not isTargetMuted then
-                                    -- استقبال الرسالة إذا لم تكن خاصة لشخص آخر، أو إذا كانت موجهة إلينا خصيصاً أو أرسلناها لنفسنا
                                     local isForMeOrEveryone = (not msg.targetRecipient or msg.targetRecipient == "" or msg.targetRecipient == tostring(LocalPlayer.UserId) or tostring(msg.senderId) == tostring(LocalPlayer.UserId))
                                     
                                     if isForMeOrEveryone then
-                                        -- لا تشغل الصوت أو البوب أب مرتين إذا كانت رسالة أرسلتها بنفسك محلياً
                                         if tostring(msg.senderId) ~= tostring(LocalPlayer.UserId) then
                                             JoinSound:Play()
                                             if msg.isSystem then
@@ -1259,7 +1254,6 @@ task.spawn(function()
                                                 end
                                             end
                                         else
-                                            -- إذا أرسلت رسالة لنفسك (الرسائل المحفوظة)، قم بتشغيل صوت الإشعار والبوب أب لتستلمها كإشعار حقيقي كما طلبت!
                                             if msg.targetRecipient == tostring(LocalPlayer.UserId) then
                                                 JoinSound:Play()
                                                 showSidePopup(msg.senderId, msg.senderName, msg.text, msg.isSticker, msg.stickerId, msg.isVip, msg.targetRecipient)
